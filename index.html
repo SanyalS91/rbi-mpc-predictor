@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBI MPC Policy Action Predictor</title>
+<meta property="og:title" content="RBI MPC Policy Action Predictor">
+<meta property="og:description" content="Interactive tool: Predict RBI rate cut/hold/hike probabilities based on macro inputs. Ordered probit model on 61 MPC decisions.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0e17; --surface: #111827; --surface2: #1a2235;
+    --border: #1e293b; --text: #e2e8f0; --text-dim: #7a8ba8;
+    --dim2: #64748b; --dim3: #475569;
+    --green: #10b981; --amber: #f59e0b; --red: #ef4444; --blue: #3b82f6; --purple: #8b5cf6;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 21px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .sub { font-size: 12.5px; color: var(--dim2); margin-top: 4px; line-height: 1.5; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Presets */
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+  .preset-btn {
+    padding: 6px 12px; font-size: 11px; font-weight: 500;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: #94a3b8; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--blue); color: var(--text); }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; }
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+  .card-sm { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; }
+  .section-label { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+  .section-label-sm { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+  /* Sliders */
+  .slider-group { margin-bottom: 20px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .slider-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .slider-sublabel { font-size: 11px; color: var(--dim2); margin-left: 6px; }
+  .slider-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; min-width: 70px; text-align: right; }
+  .slider-track { position: relative; height: 32px; display: flex; align-items: center; }
+  .slider-bg { position: absolute; left: 0; right: 0; height: 5px; border-radius: 3px; background: var(--border); }
+  .slider-fill { position: absolute; left: 0; height: 5px; border-radius: 3px; }
+  input[type=range] {
+    position: absolute; left: 0; right: 0; width: 100%; height: 32px;
+    -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer; z-index: 2;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: #e2e8f0; border: 2px solid #0a0e17; box-shadow: 0 0 8px rgba(226,232,240,0.3);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #e2e8f0; border: 2px solid #0a0e17;
+  }
+  .slider-range { display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px; color: var(--dim3); }
+
+  /* Derived metrics */
+  .metrics { margin-top: 16px; padding: 12px 14px; background: var(--bg); border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metric-label { font-size: 10px; color: var(--dim3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
+
+  /* Prob bars */
+  .prob-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .prob-card { flex: 1; min-width: 0; border-radius: 14px; padding: 16px 20px; transition: all 0.3s ease; }
+  .prob-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .prob-label-wrap { display: flex; align-items: center; gap: 8px; }
+  .prob-icon { font-size: 20px; }
+  .prob-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+  .prob-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 800; transition: color 0.3s; }
+  .prob-value span { font-size: 14px; font-weight: 500; }
+  .prob-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .prob-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  /* Gauge */
+  .gauge-wrap { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+
+  /* Timeline */
+  .timeline { display: flex; gap: 0; align-items: flex-end; justify-content: space-between; }
+  .tl-item { flex: 1; text-align: center; }
+  .tl-rate { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .tl-bar { border-radius: 4px 4px 0 0; margin: 0 4px; transition: height 0.3s; }
+  .tl-month { font-size: 10px; color: var(--dim2); margin-top: 4px; }
+  .tl-action { font-size: 9px; margin-top: 2px; font-weight: 600; }
+
+  /* Interp */
+  .interp { font-size: 12.5px; color: #94a3b8; line-height: 1.6; }
+  .footer-note { font-size: 11.5px; color: var(--dim3); line-height: 1.6; margin-top: 16px; }
+  .footer-note strong { color: var(--dim2); }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+// === MODEL ===
+const BETA = [0.5406, 0.6311, 0.0577, 0.0764, -0.1052];
+const C1 = -0.1950, C2 = 2.6245;
+
+function normCdf(x) {
+  const sign = x < 0 ? -1 : 1;
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = 1 - (((((1.061405429*t - 1.453152027)*t + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t) * Math.exp(-x*x/2);
+  return 0.5 * (1 + sign * y);
+}
+
+function predict(cpi, core, gdp, repo) {
+  const x = [cpi-4, core-4, gdp-6.5, repo-cpi, Math.max(cpi-6, 0)];
+  const xb = x.reduce((s,v,i) => s + v*BETA[i], 0);
+  const pCut = normCdf(C1 - xb);
+  const pHike = 1 - normCdf(C2 - xb);
+  return { cut: pCut, hold: Math.max(0, 1-pCut-pHike), hike: pHike };
+}
+
+// === STATE ===
+let state = { cpi: 2.0, core: 3.5, gdp: 7.3, repo: 5.25 };
+
+const PRESETS = [
+  { name: "Feb 2026 (Current)", cpi: 2.0, core: 3.5, gdp: 7.3, repo: 5.25 },
+  { name: "Apr 2026 (Next MPC)", cpi: 4.0, core: 3.6, gdp: 7.0, repo: 5.25 },
+  { name: "May 2022 (Emergency Hike)", cpi: 7.0, core: 6.1, gdp: 4.1, repo: 4.0 },
+  { name: "Aug 2019 (Easing Cycle)", cpi: 3.3, core: 4.2, gdp: 5.0, repo: 5.75 },
+  { name: "Stagflation Scenario", cpi: 7.5, core: 6.5, gdp: 4.0, repo: 6.5 },
+  { name: "IT Job Cuts Drag", cpi: 3.5, core: 3.5, gdp: 5.8, repo: 5.25 },
+];
+
+const TIMELINE = [
+  { m: "Feb 25", rate: 6.50, action: "−25", cut: true },
+  { m: "Apr 25", rate: 6.25, action: "−25", cut: true },
+  { m: "Jun 25", rate: 6.00, action: "−25", cut: true },
+  { m: "Aug 25", rate: 5.75, action: "Hold", cut: false },
+  { m: "Oct 25", rate: 5.75, action: "Hold", cut: false },
+  { m: "Dec 25", rate: 5.25, action: "−25", cut: true },
+  { m: "Feb 26", rate: 5.25, action: "Hold", cut: false, current: true },
+];
+
+function render() {
+  const p = predict(state.cpi, state.core, state.gdp, state.repo);
+  const realRate = (state.repo - state.cpi).toFixed(1);
+  const cpiGap = (state.cpi - 4).toFixed(1);
+
+  const sliderConf = [
+    { key: 'cpi', label: 'CPI Inflation', sub: 'Headline YoY', min: 0, max: 10, step: 0.1, color: 'var(--amber)' },
+    { key: 'core', label: 'Core CPI', sub: 'Ex food & fuel', min: 0, max: 8, step: 0.1, color: 'var(--purple)' },
+    { key: 'gdp', label: 'GDP Growth', sub: 'Real YoY', min: -5, max: 15, step: 0.1, color: 'var(--blue)' },
+    { key: 'repo', label: 'Repo Rate', sub: 'Policy rate', min: 3, max: 8, step: 0.25, color: 'var(--green)' },
+  ];
+
+  let slidersHTML = sliderConf.map(s => {
+    const val = state[s.key];
+    const pct = ((val - s.min) / (s.max - s.min)) * 100;
+    const dec = s.step < 1 ? (s.step < 0.1 ? 2 : 1) : 0;
+    return `
+      <div class="slider-group">
+        <div class="slider-header">
+          <div><span class="slider-label">${s.label}</span><span class="slider-sublabel">${s.sub}</span></div>
+          <span class="slider-value" style="color:${s.color}">${val.toFixed(dec)}%</span>
+        </div>
+        <div class="slider-track">
+          <div class="slider-bg"></div>
+          <div class="slider-fill" style="width:${pct}%;background:linear-gradient(90deg,${s.color}44,${s.color})"></div>
+          <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${val}" data-key="${s.key}">
+        </div>
+        <div class="slider-range"><span>${s.min}%</span><span>${s.max}%</span></div>
+      </div>`;
+  }).join('');
+
+  // Gauge SVG
+  const r=90, cx=120, cy=110, sw=14;
+  const sa = -Math.PI, ta = Math.PI;
+  const ca = sa + ta*p.cut, ha = ca + ta*p.hold;
+  function arc(s,e) {
+    if(e-s<0.01) return '';
+    const x1=cx+r*Math.cos(s), y1=cy+r*Math.sin(s), x2=cx+r*Math.cos(e), y2=cy+r*Math.sin(e);
+    return `M ${x1} ${y1} A ${r} ${r} 0 ${e-s>Math.PI?1:0} 1 ${x2} ${y2}`;
+  }
+  const wa = sa + ta*(p.cut*0 + p.hold*0.5 + p.hike*1);
+  const nl = r-20, nx=cx+nl*Math.cos(wa), ny=cy+nl*Math.sin(wa);
+  let dom="HOLD", dc="var(--amber)";
+  if(p.cut>p.hold&&p.cut>p.hike){dom="CUT";dc="var(--green)";}
+  if(p.hike>p.hold&&p.hike>p.cut){dom="HIKE";dc="var(--red)";}
+
+  const gaugeSVG = `<svg width="240" height="135" viewBox="0 0 240 130">
+    ${p.cut>0.005?`<path d="${arc(sa,ca)}" fill="none" stroke="var(--green)" stroke-width="${sw}" stroke-linecap="round"/>`:''}
+    ${p.hold>0.005?`<path d="${arc(ca+0.02,ha-0.02)}" fill="none" stroke="var(--amber)" stroke-width="${sw}" stroke-linecap="round"/>`:''}
+    ${p.hike>0.005?`<path d="${arc(ha,sa+ta)}" fill="none" stroke="var(--red)" stroke-width="${sw}" stroke-linecap="round"/>`:''}
+    <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#e2e8f0" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="#e2e8f0"/>
+    <text x="${cx-r-2}" y="${cy+16}" fill="var(--green)" font-size="10" font-weight="600" text-anchor="middle">CUT</text>
+    <text x="${cx}" y="${cy-r+24}" fill="var(--amber)" font-size="10" font-weight="600" text-anchor="middle">HOLD</text>
+    <text x="${cx+r+2}" y="${cy+16}" fill="var(--red)" font-size="10" font-weight="600" text-anchor="middle">HIKE</text>
+  </svg>`;
+
+  function probCard(label, prob, color, icon) {
+    const isMax = prob > 0.4;
+    const pct = (prob*100).toFixed(1);
+    return `<div class="prob-card" style="background:${isMax?color+'12':'#0f172a'};border:1px solid ${isMax?color+'40':'var(--border)'}">
+      <div class="prob-header">
+        <div class="prob-label-wrap"><span class="prob-icon">${icon}</span><span class="prob-label" style="color:${isMax?color:'#94a3b8'}">${label}</span></div>
+        <span class="prob-value" style="color:${isMax?color:'var(--dim3)'}">${pct}<span>%</span></span>
+      </div>
+      <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${prob*100}%;background:linear-gradient(90deg,${color}88,${color})"></div></div>
+    </div>`;
+  }
+
+  // Interpretation
+  let interp = '';
+  if (state.cpi > 6) {
+    interp = `CPI at ${state.cpi.toFixed(1)}% breaches the upper tolerance band. Model assigns ${(p.hike*100).toFixed(0)}% probability to a hike.${state.core > 5.5 ? ' Elevated core reinforces hawkish bias.' : ' Contained core may delay action.'}`;
+  } else if (state.cpi < 3) {
+    interp = `CPI at ${state.cpi.toFixed(1)}% is well below target — ${(p.cut*100).toFixed(0)}% probability of a cut.${state.repo-state.cpi > 2.5 ? ` High real rate (+${realRate}%) creates significant room for easing.` : ''}${state.gdp < 6 ? ' Weak growth amplifies the dovish signal.' : ''}`;
+  } else {
+    const rel = Math.abs(state.cpi-4)<0.5 ? 'near' : state.cpi>4 ? 'above' : 'below';
+    interp = `CPI at ${state.cpi.toFixed(1)}% is ${rel} the 4% target.${parseFloat(realRate)>2 ? ` Real rate at +${realRate}% creates room for easing.` : parseFloat(realRate)<0 ? ' Negative real rate tilts towards tightening.' : ' Real rate is in neutral territory.'}${state.gdp<5 ? ' Sub-5% growth tilts the balance towards accommodation.' : ''}`;
+  }
+
+  // Timeline
+  const tlHTML = TIMELINE.map(d => {
+    const h = ((d.rate-4.5)/2.5)*80+20;
+    const c = d.cut ? 'var(--green)' : d.current ? 'var(--blue)' : 'var(--amber)';
+    return `<div class="tl-item">
+      <div class="tl-rate" style="color:${d.current?'var(--blue)':'var(--text)'}">${d.rate}%</div>
+      <div class="tl-bar" style="height:${h}px;background:linear-gradient(180deg,${c}44,${c})"></div>
+      <div class="tl-month" style="color:${d.current?'var(--blue)':'var(--dim2)'};font-weight:${d.current?700:400}">${d.m}</div>
+      <div class="tl-action" style="color:${c}">${d.action}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <header style="margin-bottom:24px">
+      <h1>RBI MPC Policy Action Predictor</h1>
+      <p class="sub">Ordered probit model · 61 MPC decisions (Apr 2016 – Feb 2026) · Repo rate: 5.25% · Next MPC: Apr 6–8, 2026</p>
+    </header>
+
+    <div class="presets">${PRESETS.map(pr => `<button class="preset-btn" data-preset="${pr.name}">${pr.name}</button>`).join('')}</div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="section-label">Macro Inputs</div>
+        ${slidersHTML}
+        <div class="metrics">
+          <div>
+            <div class="metric-label">Real Rate</div>
+            <div class="metric-value" style="color:${parseFloat(realRate)>0?'var(--green)':'var(--red)'}">
+              ${realRate>0?'+':''}${realRate}%
+            </div>
+          </div>
+          <div>
+            <div class="metric-label">CPI vs Target</div>
+            <div class="metric-value" style="color:${parseFloat(cpiGap)>0?'var(--red)':'var(--green)'}">
+              ${cpiGap>0?'+':''}${cpiGap}%
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card-sm gauge-wrap" style="padding:20px 24px 12px;margin-bottom:16px">
+          <div style="text-align:center">
+            ${gaugeSVG}
+            <div style="font-size:11px;color:${dc};font-weight:700;letter-spacing:1.5px;margin-top:-8px">MOST LIKELY: ${dom}</div>
+          </div>
+        </div>
+
+        <div class="prob-row">
+          ${probCard('Rate Cut', p.cut, 'var(--green)', '📉')}
+          ${probCard('Hold', p.hold, 'var(--amber)', '⏸')}
+          ${probCard('Rate Hike', p.hike, 'var(--red)', '📈')}
+        </div>
+
+        <div class="card-sm">
+          <div class="section-label-sm">Model interpretation</div>
+          <p class="interp">${interp}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-sm" style="margin-top:20px">
+      <div class="section-label-sm">FY25–26 Rate Path (125 bps cumulative easing)</div>
+      <div class="timeline">${tlHTML}</div>
+    </div>
+
+    <div class="card-sm footer-note" style="margin-top:16px">
+      <strong>Methodology:</strong> Ordered probit on 61 MPC decisions under the flexible inflation targeting regime (Apr 2016–Feb 2026).
+      Features: CPI gap from 4% target, core CPI gap, GDP growth gap from 6.5% potential, ex-ante real rate, and upper-band breach indicator.
+      Core CPI has the largest coefficient (0.63), followed by headline CPI gap (0.54) — consistent with RBI's revealed preference for durable disinflation over headline prints.
+      In-sample accuracy: 62%. Treat as directional guidance — MPC decisions also depend on forward guidance, liquidity conditions, fiscal stance, and global spillovers not captured here.
+    </div>
+
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--dim3)">
+      Built by <a href="https://github.com/SanyalS91" style="color:var(--blue);text-decoration:none">Subhankar Sanyal</a> · Elara Securities · Data as of Feb 2026
+    </div>
+  `;
+
+  // Bind events
+  document.querySelectorAll('input[type=range]').forEach(el => {
+    el.addEventListener('input', e => {
+      state[e.target.dataset.key] = parseFloat(e.target.value);
+      render();
+    });
+  });
+  document.querySelectorAll('.preset-btn').forEach(el => {
+    el.addEventListener('click', e => {
+      const pr = PRESETS.find(p => p.name === e.target.dataset.preset);
+      if (pr) { state = { cpi: pr.cpi, core: pr.core, gdp: pr.gdp, repo: pr.repo }; render(); }
+    });
+  });
+}
+
+render();
+</script>
+</body>
+</html>
