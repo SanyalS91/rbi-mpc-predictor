@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RBI MPC Policy Action Predictor</title>
 <meta property="og:title" content="RBI MPC Policy Action Predictor">
-<meta property="og:description" content="Interactive tool: Predict RBI rate cut/hold/hike probabilities based on macro inputs. Ordered probit model on 61 MPC decisions.">
+<meta property="og:description" content="Interactive tool: Predict RBI rate cut/hold/hike probabilities based on macro inputs.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -18,12 +18,10 @@
     --green: #10b981; --amber: #f59e0b; --red: #ef4444; --blue: #3b82f6; --purple: #8b5cf6;
   }
   body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
-  .container { max-width: 900px; margin: 0 auto; }
+  .container { max-width: 920px; margin: 0 auto; }
   h1 { font-size: 21px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
   .sub { font-size: 12.5px; color: var(--dim2); margin-top: 4px; line-height: 1.5; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
 
-  /* Presets */
   .presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
   .preset-btn {
     padding: 6px 12px; font-size: 11px; font-weight: 500;
@@ -32,17 +30,14 @@
   }
   .preset-btn:hover { border-color: var(--blue); color: var(--text); }
 
-  /* Grid */
   .grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; }
   @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
 
-  /* Cards */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
   .card-sm { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; }
   .section-label { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
   .section-label-sm { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
-  /* Sliders */
   .slider-group { margin-bottom: 20px; }
   .slider-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
   .slider-label { font-size: 13px; font-weight: 600; color: var(--text); }
@@ -65,12 +60,21 @@
   }
   .slider-range { display: flex; justify-content: space-between; margin-top: 2px; font-size: 10px; color: var(--dim3); }
 
-  /* Derived metrics */
+  .manual-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .manual-input-wrap { position: relative; }
+  .manual-label { font-size: 10px; color: var(--dim3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .manual-input {
+    width: 100%; padding: 8px 28px 8px 10px; font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 600; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px; outline: none; transition: border-color 0.15s;
+  }
+  .manual-input:focus { border-color: var(--blue); }
+  .manual-unit { position: absolute; right: 10px; top: 28px; font-size: 12px; color: var(--dim3); pointer-events: none; }
+
   .metrics { margin-top: 16px; padding: 12px 14px; background: var(--bg); border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .metric-label { font-size: 10px; color: var(--dim3); text-transform: uppercase; letter-spacing: 0.5px; }
   .metric-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
 
-  /* Prob bars */
   .prob-row { display: flex; gap: 12px; margin-bottom: 16px; }
   .prob-card { flex: 1; min-width: 0; border-radius: 14px; padding: 16px 20px; transition: all 0.3s ease; }
   .prob-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -82,29 +86,24 @@
   .prob-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
   .prob-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 
-  /* Gauge */
   .gauge-wrap { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 
-  /* Timeline */
-  .timeline { display: flex; gap: 0; align-items: flex-end; justify-content: space-between; }
-  .tl-item { flex: 1; text-align: center; }
-  .tl-rate { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
-  .tl-bar { border-radius: 4px 4px 0 0; margin: 0 4px; transition: height 0.3s; }
-  .tl-month { font-size: 10px; color: var(--dim2); margin-top: 4px; }
-  .tl-action { font-size: 9px; margin-top: 2px; font-weight: 600; }
+  .timeline-svg { width: 100%; overflow: visible; }
 
-  /* Interp */
-  .interp { font-size: 12.5px; color: #94a3b8; line-height: 1.6; }
-  .footer-note { font-size: 11.5px; color: var(--dim3); line-height: 1.6; margin-top: 16px; }
-  .footer-note strong { color: var(--dim2); }
+  .input-toggle { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; }
+  .toggle-btn {
+    flex: 1; padding: 6px 10px; font-size: 11px; font-weight: 500; text-align: center;
+    color: var(--dim2); border: none; background: none; border-radius: 6px;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .toggle-btn.active { background: var(--surface2); color: #fff; }
 </style>
 </head>
 <body>
 <div class="container" id="app"></div>
 
 <script>
-// === MODEL ===
-const BETA = [0.5406, 0.6311, 0.0577, 0.0764, -0.1052];
+const BETA = [0.5406, 0.6311, 0.20, 0.0764, -0.1052, 0.50];
 const C1 = -0.1950, C2 = 2.6245;
 
 function normCdf(x) {
@@ -115,33 +114,31 @@ function normCdf(x) {
 }
 
 function predict(cpi, core, gdp, repo) {
-  const x = [cpi-4, core-4, gdp-6.5, repo-cpi, Math.max(cpi-6, 0)];
+  const noUrgency = Math.max(0, gdp - 6.5) * Math.max(0, 4 - cpi);
+  const x = [cpi-4, core-4, gdp-6.5, repo-cpi, Math.max(cpi-6, 0), noUrgency];
   const xb = x.reduce((s,v,i) => s + v*BETA[i], 0);
   const pCut = normCdf(C1 - xb);
   const pHike = 1 - normCdf(C2 - xb);
   return { cut: pCut, hold: Math.max(0, 1-pCut-pHike), hike: pHike };
 }
 
-// === STATE ===
 let state = { cpi: 2.0, core: 3.5, gdp: 7.3, repo: 5.25 };
+let inputMode = 'slider';
 
 const PRESETS = [
-  { name: "Feb 2026 (Current)", cpi: 2.0, core: 3.5, gdp: 7.3, repo: 5.25 },
+  { name: "Feb 2026 (Latest MPC)", cpi: 2.0, core: 3.5, gdp: 7.3, repo: 5.25 },
   { name: "Apr 2026 (Next MPC)", cpi: 4.0, core: 3.6, gdp: 7.0, repo: 5.25 },
-  { name: "May 2022 (Emergency Hike)", cpi: 7.0, core: 6.1, gdp: 4.1, repo: 4.0 },
-  { name: "Aug 2019 (Easing Cycle)", cpi: 3.3, core: 4.2, gdp: 5.0, repo: 5.75 },
-  { name: "Stagflation Scenario", cpi: 7.5, core: 6.5, gdp: 4.0, repo: 6.5 },
-  { name: "IT Job Cuts Drag", cpi: 3.5, core: 3.5, gdp: 5.8, repo: 5.25 },
 ];
 
+// Corrected from actual RBI data
 const TIMELINE = [
-  { m: "Feb 25", rate: 6.50, action: "−25", cut: true },
-  { m: "Apr 25", rate: 6.25, action: "−25", cut: true },
-  { m: "Jun 25", rate: 6.00, action: "−25", cut: true },
-  { m: "Aug 25", rate: 5.75, action: "Hold", cut: false },
-  { m: "Oct 25", rate: 5.75, action: "Hold", cut: false },
-  { m: "Dec 25", rate: 5.25, action: "−25", cut: true },
-  { m: "Feb 26", rate: 5.25, action: "Hold", cut: false, current: true },
+  { m:"Feb 25", rate:6.50, action:"−25", cut:true,  cpi:4.26, core:3.8, gdp:6.5, repo:6.50 },
+  { m:"Apr 25", rate:6.25, action:"−25", cut:true,  cpi:3.34, core:3.5, gdp:6.5, repo:6.25 },
+  { m:"Jun 25", rate:6.00, action:"−50", cut:true,  cpi:3.16, core:3.3, gdp:6.3, repo:6.00 },
+  { m:"Aug 25", rate:5.50, action:"Hold", cut:false, cpi:3.50, core:3.4, gdp:7.0, repo:5.50 },
+  { m:"Oct 25", rate:5.50, action:"Hold", cut:false, cpi:3.50, core:3.5, gdp:7.0, repo:5.50 },
+  { m:"Dec 25", rate:5.50, action:"−25", cut:true,  cpi:2.50, core:3.3, gdp:7.3, repo:5.50 },
+  { m:"Feb 26", rate:5.25, action:"Hold", cut:false, cpi:2.00, core:3.5, gdp:7.3, repo:5.25, current:true },
 ];
 
 function render() {
@@ -150,61 +147,82 @@ function render() {
   const cpiGap = (state.cpi - 4).toFixed(1);
 
   const sliderConf = [
-    { key: 'cpi', label: 'CPI Inflation', sub: 'Headline YoY', min: 0, max: 10, step: 0.1, color: 'var(--amber)' },
-    { key: 'core', label: 'Core CPI', sub: 'Ex food & fuel', min: 0, max: 8, step: 0.1, color: 'var(--purple)' },
-    { key: 'gdp', label: 'GDP Growth', sub: 'Real YoY', min: -5, max: 15, step: 0.1, color: 'var(--blue)' },
-    { key: 'repo', label: 'Repo Rate', sub: 'Policy rate', min: 3, max: 8, step: 0.25, color: 'var(--green)' },
+    { key:'cpi', label:'CPI Inflation', sub:'Headline YoY', min:0, max:10, step:0.1, color:'var(--amber)' },
+    { key:'core', label:'Core CPI', sub:'Ex food & fuel', min:0, max:8, step:0.1, color:'var(--purple)' },
+    { key:'gdp', label:'GDP Growth', sub:'Real YoY', min:-5, max:15, step:0.1, color:'var(--blue)' },
+    { key:'repo', label:'Repo Rate', sub:'Policy rate', min:3, max:8, step:0.25, color:'var(--green)' },
   ];
 
-  let slidersHTML = sliderConf.map(s => {
-    const val = state[s.key];
-    const pct = ((val - s.min) / (s.max - s.min)) * 100;
-    const dec = s.step < 1 ? (s.step < 0.1 ? 2 : 1) : 0;
-    return `
-      <div class="slider-group">
-        <div class="slider-header">
-          <div><span class="slider-label">${s.label}</span><span class="slider-sublabel">${s.sub}</span></div>
-          <span class="slider-value" style="color:${s.color}">${val.toFixed(dec)}%</span>
+  let inputHTML = '';
+  if (inputMode === 'slider') {
+    inputHTML = sliderConf.map(s => {
+      const val = state[s.key];
+      const pct = ((val - s.min) / (s.max - s.min)) * 100;
+      return `
+        <div class="slider-group">
+          <div class="slider-header">
+            <div><span class="slider-label">${s.label}</span><span class="slider-sublabel">${s.sub}</span></div>
+            <span class="slider-value" style="color:${s.color}">${val.toFixed(1)}%</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-bg"></div>
+            <div class="slider-fill" style="width:${pct}%;background:linear-gradient(90deg,${s.color}44,${s.color})"></div>
+            <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${val}" data-key="${s.key}">
+          </div>
+          <div class="slider-range"><span>${s.min}%</span><span>${s.max}%</span></div>
+        </div>`;
+    }).join('');
+  } else {
+    inputHTML = `<div class="manual-row">
+      ${sliderConf.map(s => `
+        <div class="manual-input-wrap">
+          <div class="manual-label">${s.label}</div>
+          <input class="manual-input" type="number" step="${s.step}" min="${s.min}" max="${s.max}" value="${state[s.key]}" data-key="${s.key}">
+          <span class="manual-unit">%</span>
         </div>
-        <div class="slider-track">
-          <div class="slider-bg"></div>
-          <div class="slider-fill" style="width:${pct}%;background:linear-gradient(90deg,${s.color}44,${s.color})"></div>
-          <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${val}" data-key="${s.key}">
-        </div>
-        <div class="slider-range"><span>${s.min}%</span><span>${s.max}%</span></div>
-      </div>`;
-  }).join('');
-
-  // Gauge SVG
-  const r=90, cx=120, cy=110, sw=14;
-  const sa = -Math.PI, ta = Math.PI;
-  const ca = sa + ta*p.cut, ha = ca + ta*p.hold;
-  function arc(s,e) {
-    if(e-s<0.01) return '';
-    const x1=cx+r*Math.cos(s), y1=cy+r*Math.sin(s), x2=cx+r*Math.cos(e), y2=cy+r*Math.sin(e);
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${e-s>Math.PI?1:0} 1 ${x2} ${y2}`;
+      `).join('')}
+    </div>`;
   }
-  const wa = sa + ta*(p.cut*0 + p.hold*0.5 + p.hike*1);
-  const nl = r-20, nx=cx+nl*Math.cos(wa), ny=cy+nl*Math.sin(wa);
-  let dom="HOLD", dc="var(--amber)";
+
+  // Gauge
+  const r=90, cx=120, cy=110, sw=14;
+  const sa=-Math.PI, ta=Math.PI;
+  const ca=sa+ta*p.cut, ha=ca+ta*p.hold;
+  function arc(s,e){
+    if(e-s<0.01)return'';
+    const x1=cx+r*Math.cos(s),y1=cy+r*Math.sin(s),x2=cx+r*Math.cos(e),y2=cy+r*Math.sin(e);
+    return`M ${x1} ${y1} A ${r} ${r} 0 ${e-s>Math.PI?1:0} 1 ${x2} ${y2}`;
+  }
+  // Needle: point to the midpoint of the winning segment
+  let needleTarget;
+  if(p.cut>=p.hold&&p.cut>=p.hike){
+    // Cut is dominant — point to middle of cut arc
+    needleTarget = p.cut * 0.5;
+  } else if(p.hike>=p.hold&&p.hike>=p.cut){
+    // Hike is dominant — point to middle of hike arc
+    needleTarget = p.cut + p.hold + p.hike * 0.5;
+  } else {
+    // Hold is dominant — point to middle of hold arc
+    needleTarget = p.cut + p.hold * 0.5;
+  }
+  const wa=sa+ta*needleTarget;
+  const nl=r-20,nx=cx+nl*Math.cos(wa),ny=cy+nl*Math.sin(wa);
+  let dom="HOLD",dc="var(--amber)";
   if(p.cut>p.hold&&p.cut>p.hike){dom="CUT";dc="var(--green)";}
   if(p.hike>p.hold&&p.hike>p.cut){dom="HIKE";dc="var(--red)";}
 
-  const gaugeSVG = `<svg width="240" height="135" viewBox="0 0 240 130">
+  const gaugeSVG=`<svg width="240" height="135" viewBox="0 0 240 130">
     ${p.cut>0.005?`<path d="${arc(sa,ca)}" fill="none" stroke="var(--green)" stroke-width="${sw}" stroke-linecap="round"/>`:''}
     ${p.hold>0.005?`<path d="${arc(ca+0.02,ha-0.02)}" fill="none" stroke="var(--amber)" stroke-width="${sw}" stroke-linecap="round"/>`:''}
     ${p.hike>0.005?`<path d="${arc(ha,sa+ta)}" fill="none" stroke="var(--red)" stroke-width="${sw}" stroke-linecap="round"/>`:''}
-    <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#e2e8f0" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="${cx}" cy="${cy}" r="5" fill="#e2e8f0"/>
     <text x="${cx-r-2}" y="${cy+16}" fill="var(--green)" font-size="10" font-weight="600" text-anchor="middle">CUT</text>
     <text x="${cx}" y="${cy-r+24}" fill="var(--amber)" font-size="10" font-weight="600" text-anchor="middle">HOLD</text>
     <text x="${cx+r+2}" y="${cy+16}" fill="var(--red)" font-size="10" font-weight="600" text-anchor="middle">HIKE</text>
   </svg>`;
 
-  function probCard(label, prob, color, icon) {
-    const isMax = prob > 0.4;
-    const pct = (prob*100).toFixed(1);
-    return `<div class="prob-card" style="background:${isMax?color+'12':'#0f172a'};border:1px solid ${isMax?color+'40':'var(--border)'}">
+  function probCard(label,prob,color,icon){
+    const isMax=prob>0.4;const pct=(prob*100).toFixed(1);
+    return`<div class="prob-card" style="background:${isMax?color+'12':'#0f172a'};border:1px solid ${isMax?color+'40':'var(--border)'}">
       <div class="prob-header">
         <div class="prob-label-wrap"><span class="prob-icon">${icon}</span><span class="prob-label" style="color:${isMax?color:'#94a3b8'}">${label}</span></div>
         <span class="prob-value" style="color:${isMax?color:'var(--dim3)'}">${pct}<span>%</span></span>
@@ -213,41 +231,92 @@ function render() {
     </div>`;
   }
 
-  // Interpretation
-  let interp = '';
-  if (state.cpi > 6) {
-    interp = `CPI at ${state.cpi.toFixed(1)}% breaches the upper tolerance band. Model assigns ${(p.hike*100).toFixed(0)}% probability to a hike.${state.core > 5.5 ? ' Elevated core reinforces hawkish bias.' : ' Contained core may delay action.'}`;
-  } else if (state.cpi < 3) {
-    interp = `CPI at ${state.cpi.toFixed(1)}% is well below target — ${(p.cut*100).toFixed(0)}% probability of a cut.${state.repo-state.cpi > 2.5 ? ` High real rate (+${realRate}%) creates significant room for easing.` : ''}${state.gdp < 6 ? ' Weak growth amplifies the dovish signal.' : ''}`;
-  } else {
-    const rel = Math.abs(state.cpi-4)<0.5 ? 'near' : state.cpi>4 ? 'above' : 'below';
-    interp = `CPI at ${state.cpi.toFixed(1)}% is ${rel} the 4% target.${parseFloat(realRate)>2 ? ` Real rate at +${realRate}% creates room for easing.` : parseFloat(realRate)<0 ? ' Negative real rate tilts towards tightening.' : ' Real rate is in neutral territory.'}${state.gdp<5 ? ' Sub-5% growth tilts the balance towards accommodation.' : ''}`;
-  }
+  // Timeline as SVG step chart
+  const tlW = 820, tlH = 200;
+  const tlPad = { l:50, r:30, t:30, b:70 };
+  const plotW = tlW - tlPad.l - tlPad.r;
+  const plotH = tlH - tlPad.t - tlPad.b;
+  const rates = TIMELINE.map(d => d.rate);
+  const rMin = Math.min(...rates) - 0.25;
+  const rMax = Math.max(...rates) + 0.25;
+  const xStep = plotW / (TIMELINE.length - 1);
+  const yScale = v => tlPad.t + plotH - ((v - rMin) / (rMax - rMin)) * plotH;
+  const xPos = i => tlPad.l + i * xStep;
 
-  // Timeline
-  const tlHTML = TIMELINE.map(d => {
-    const h = ((d.rate-4.5)/2.5)*80+20;
-    const c = d.cut ? 'var(--green)' : d.current ? 'var(--blue)' : 'var(--amber)';
-    return `<div class="tl-item">
-      <div class="tl-rate" style="color:${d.current?'var(--blue)':'var(--text)'}">${d.rate}%</div>
-      <div class="tl-bar" style="height:${h}px;background:linear-gradient(180deg,${c}44,${c})"></div>
-      <div class="tl-month" style="color:${d.current?'var(--blue)':'var(--dim2)'};font-weight:${d.current?700:400}">${d.m}</div>
-      <div class="tl-action" style="color:${c}">${d.action}</div>
-    </div>`;
+  // Grid lines
+  const gridRates = [];
+  for (let r = Math.ceil(rMin * 4) / 4; r <= rMax; r += 0.25) gridRates.push(r);
+  let gridLines = gridRates.map(r => {
+    const y = yScale(r);
+    return `<line x1="${tlPad.l}" y1="${y}" x2="${tlW-tlPad.r}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
+      <text x="${tlPad.l-8}" y="${y+4}" text-anchor="end" fill="#475569" font-size="10" font-family="JetBrains Mono,monospace">${r.toFixed(1)}%</text>`;
   }).join('');
 
-  document.getElementById('app').innerHTML = `
+  // Step line path
+  let stepPath = `M ${xPos(0)} ${yScale(TIMELINE[0].rate)}`;
+  for (let i = 1; i < TIMELINE.length; i++) {
+    stepPath += ` L ${xPos(i)} ${yScale(TIMELINE[i-1].rate)}`;
+    stepPath += ` L ${xPos(i)} ${yScale(TIMELINE[i].rate)}`;
+  }
+
+  // Area fill under step
+  let areaPath = stepPath + ` L ${xPos(TIMELINE.length-1)} ${yScale(rMin)} L ${xPos(0)} ${yScale(rMin)} Z`;
+
+  // Dots, labels, annotations
+  let dots = '', labels = '';
+  TIMELINE.forEach((d, i) => {
+    const x = xPos(i);
+    const y = yScale(d.rate);
+    const mp = predict(d.cpi, d.core, d.gdp, d.repo);
+    const actualProb = d.cut ? mp.cut : mp.hold;
+    const c = d.cut ? '#10b981' : d.current ? '#3b82f6' : '#f59e0b';
+
+    // Dot
+    dots += `<circle cx="${x}" cy="${y}" r="5" fill="${c}" stroke="#0a0e17" stroke-width="2"/>`;
+
+    // Rate label above dot
+    dots += `<text x="${x}" y="${y-14}" text-anchor="middle" fill="${d.current?'#3b82f6':'#e2e8f0'}" font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${d.rate}%</text>`;
+
+    // Month below x-axis
+    labels += `<text x="${x}" y="${tlH-tlPad.b+18}" text-anchor="middle" fill="${d.current?'#3b82f6':'#64748b'}" font-size="10" font-weight="${d.current?700:400}" font-family="DM Sans,sans-serif">${d.m}</text>`;
+
+    // Action + probability
+    labels += `<text x="${x}" y="${tlH-tlPad.b+32}" text-anchor="middle" fill="${c}" font-size="9" font-weight="600" font-family="DM Sans,sans-serif">${d.action}</text>`;
+    labels += `<text x="${x}" y="${tlH-tlPad.b+44}" text-anchor="middle" fill="#475569" font-size="8.5" font-family="JetBrains Mono,monospace">(${(actualProb*100).toFixed(0)}%)</text>`;
+  });
+
+  const tlSVG = `<svg class="timeline-svg" viewBox="0 0 ${tlW} ${tlH}" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#10b981" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    <path d="${areaPath}" fill="url(#areaGrad)"/>
+    <path d="${stepPath}" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+    ${labels}
+  </svg>`;
+
+  document.getElementById('app').innerHTML=`
     <header style="margin-bottom:24px">
       <h1>RBI MPC Policy Action Predictor</h1>
-      <p class="sub">Ordered probit model · 61 MPC decisions (Apr 2016 – Feb 2026) · Repo rate: 5.25% · Next MPC: Apr 6–8, 2026</p>
+      <p class="sub">Last MPC: Feb 6, 2026 (Hold at 5.25%) · Next MPC: Apr 6–8, 2026</p>
     </header>
 
-    <div class="presets">${PRESETS.map(pr => `<button class="preset-btn" data-preset="${pr.name}">${pr.name}</button>`).join('')}</div>
+    <div class="presets">${PRESETS.map(pr=>`<button class="preset-btn" data-preset="${pr.name}">${pr.name}</button>`).join('')}</div>
 
     <div class="grid">
       <div class="card">
-        <div class="section-label">Macro Inputs</div>
-        ${slidersHTML}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="section-label" style="margin-bottom:0">Macro Inputs</div>
+          <div class="input-toggle">
+            <button class="toggle-btn ${inputMode==='slider'?'active':''}" data-mode="slider">Slider</button>
+            <button class="toggle-btn ${inputMode==='manual'?'active':''}" data-mode="manual">Manual</button>
+          </div>
+        </div>
+        ${inputHTML}
         <div class="metrics">
           <div>
             <div class="metric-label">Real Rate</div>
@@ -271,30 +340,17 @@ function render() {
             <div style="font-size:11px;color:${dc};font-weight:700;letter-spacing:1.5px;margin-top:-8px">MOST LIKELY: ${dom}</div>
           </div>
         </div>
-
         <div class="prob-row">
-          ${probCard('Rate Cut', p.cut, 'var(--green)', '📉')}
-          ${probCard('Hold', p.hold, 'var(--amber)', '⏸')}
-          ${probCard('Rate Hike', p.hike, 'var(--red)', '📈')}
-        </div>
-
-        <div class="card-sm">
-          <div class="section-label-sm">Model interpretation</div>
-          <p class="interp">${interp}</p>
+          ${probCard('Rate Cut',p.cut,'var(--green)','📉')}
+          ${probCard('Hold',p.hold,'var(--amber)','⏸')}
+          ${probCard('Rate Hike',p.hike,'var(--red)','📈')}
         </div>
       </div>
     </div>
 
     <div class="card-sm" style="margin-top:20px">
-      <div class="section-label-sm">FY25–26 Rate Path (125 bps cumulative easing)</div>
-      <div class="timeline">${tlHTML}</div>
-    </div>
-
-    <div class="card-sm footer-note" style="margin-top:16px">
-      <strong>Methodology:</strong> Ordered probit on 61 MPC decisions under the flexible inflation targeting regime (Apr 2016–Feb 2026).
-      Features: CPI gap from 4% target, core CPI gap, GDP growth gap from 6.5% potential, ex-ante real rate, and upper-band breach indicator.
-      Core CPI has the largest coefficient (0.63), followed by headline CPI gap (0.54) — consistent with RBI's revealed preference for durable disinflation over headline prints.
-      In-sample accuracy: 62%. Treat as directional guidance — MPC decisions also depend on forward guidance, liquidity conditions, fiscal stance, and global spillovers not captured here.
+      <div class="section-label-sm" style="margin-bottom:8px">FY25–26 Rate Path (respective probabilities)</div>
+      ${tlSVG}
     </div>
 
     <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--dim3)">
@@ -302,19 +358,62 @@ function render() {
     </div>
   `;
 
-  // Bind events
-  document.querySelectorAll('input[type=range]').forEach(el => {
-    el.addEventListener('input', e => {
-      state[e.target.dataset.key] = parseFloat(e.target.value);
+  // Bind sliders
+  document.querySelectorAll('input[type=range]').forEach(el=>{
+    el.addEventListener('input',e=>{
+      state[e.target.dataset.key]=parseFloat(e.target.value);
       render();
     });
   });
-  document.querySelectorAll('.preset-btn').forEach(el => {
-    el.addEventListener('click', e => {
-      const pr = PRESETS.find(p => p.name === e.target.dataset.preset);
-      if (pr) { state = { cpi: pr.cpi, core: pr.core, gdp: pr.gdp, repo: pr.repo }; render(); }
+
+  // Bind manual inputs
+  document.querySelectorAll('.manual-input').forEach(el=>{
+    el.addEventListener('input',e=>{
+      const val=parseFloat(e.target.value);
+      if(!isNaN(val)){state[e.target.dataset.key]=val;updateOutputs();}
+    });
+    el.addEventListener('change',e=>{
+      const val=parseFloat(e.target.value);
+      if(!isNaN(val)){state[e.target.dataset.key]=val;render();}
     });
   });
+
+  // Bind presets
+  document.querySelectorAll('.preset-btn').forEach(el=>{
+    el.addEventListener('click',e=>{
+      const pr=PRESETS.find(p=>p.name===e.target.dataset.preset);
+      if(pr){state={cpi:pr.cpi,core:pr.core,gdp:pr.gdp,repo:pr.repo};render();}
+    });
+  });
+
+  // Bind toggle
+  document.querySelectorAll('.toggle-btn').forEach(el=>{
+    el.addEventListener('click',e=>{inputMode=e.target.dataset.mode;render();});
+  });
+}
+
+function updateOutputs(){
+  const p=predict(state.cpi,state.core,state.gdp,state.repo);
+  const probEls=document.querySelectorAll('.prob-value');
+  if(probEls.length>=3){
+    const vals=[p.cut,p.hold,p.hike];
+    const colors=['var(--green)','var(--amber)','var(--red)'];
+    probEls.forEach((el,i)=>{
+      const pct=(vals[i]*100).toFixed(1);
+      const isMax=vals[i]>0.4;
+      el.innerHTML=`${pct}<span>%</span>`;
+      el.style.color=isMax?colors[i]:'var(--dim3)';
+    });
+  }
+  const metricEls=document.querySelectorAll('.metric-value');
+  if(metricEls.length>=2){
+    const rr=(state.repo-state.cpi).toFixed(1);
+    const cg=(state.cpi-4).toFixed(1);
+    metricEls[0].style.color=parseFloat(rr)>0?'var(--green)':'var(--red)';
+    metricEls[0].textContent=(rr>0?'+':'')+rr+'%';
+    metricEls[1].style.color=parseFloat(cg)>0?'var(--red)':'var(--green)';
+    metricEls[1].textContent=(cg>0?'+':'')+cg+'%';
+  }
 }
 
 render();
